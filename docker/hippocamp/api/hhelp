@@ -1,0 +1,3 @@
+#!/bin/bash
+# HippoCamp API command (runs as hippocamp_api via sudo).
+exec /usr/bin/python3 /hippocamp/api/hippocamp_api.py hhelp "$@"

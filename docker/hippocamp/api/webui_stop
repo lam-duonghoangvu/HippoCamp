@@ -1,0 +1,11 @@
+#!/bin/bash
+# Stop the WebUI (runs as hippocamp_api via sudo). Prints a JSON status.
+PID_FILE=/hippocamp/.private/state/webui.pid
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    kill "$(cat "$PID_FILE")" && rm -f "$PID_FILE"
+    printf '{\n  "success": true,\n  "data": "WebUI stopped",\n  "error": null\n}\n'
+    exit 0
+fi
+rm -f "$PID_FILE"
+printf '{\n  "success": false,\n  "data": "WebUI not running",\n  "error": "WebUI not running"\n}\n'
+exit 1

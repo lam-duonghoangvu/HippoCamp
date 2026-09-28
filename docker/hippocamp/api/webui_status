@@ -1,0 +1,11 @@
+#!/bin/bash
+# Report WebUI status (runs as hippocamp_api via sudo). Prints a JSON status.
+PORT="${HIPPOCAMP_PORT:-8080}"
+PID_FILE=/hippocamp/.private/state/webui.pid
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    printf '{\n  "success": true,\n  "data": "WebUI is running",\n  "pid": "%s",\n  "url": "http://localhost:%s",\n  "error": null\n}\n' \
+        "$(cat "$PID_FILE")" "$PORT"
+    exit 0
+fi
+printf '{\n  "success": false,\n  "data": "WebUI is not running",\n  "error": "not_running"\n}\n'
+exit 1

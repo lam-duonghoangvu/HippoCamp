@@ -1,0 +1,50 @@
+# HippoCamp shell environment for hippocamp_user.
+# Sourced by /home/hippocamp_user/.bashrc (and explicitly by the agent wrappers
+# in agent/*.py before every command).
+#
+# The API commands are shell functions rather than aliases: the agent wrappers
+# define their own functions with the same names after sourcing this file and
+# then `eval` the model's command, where an alias would take precedence.
+
+export HISTFILE=/dev/null
+export XDG_CACHE_HOME=/tmp/.cache_hippocamp_user
+export MPLCONFIGDIR=/tmp/.mpl_hippocamp_user
+
+_hc_api() { local c="$1"; shift; sudo -n -u hippocamp_api "/hippocamp/api/$c" "$@"; }
+
+return_txt()      { _hc_api return_txt "$@"; }
+return_img()      { _hc_api return_img "$@"; }
+return_ori()      { _hc_api return_ori "$@"; }
+return_metadata() { _hc_api return_metadata "$@"; }
+list_files()      { _hc_api list_files "$@"; }
+set_flags()       { _hc_api set_flags "$@"; }
+hhelp()           { _hc_api hhelp "$@"; }
+webui()           { _hc_api webui "$@"; }
+webui_stop()      { _hc_api webui_stop "$@"; }
+webui_status()    { _hc_api webui_status "$@"; }
+txt()      { return_txt "$@"; }
+img()      { return_img "$@"; }
+ori()      { return_ori "$@"; }
+ls_files() { list_files "$@"; }
+
+# `cd` stays inside /hippocamp/data (a guard, not a security boundary: the
+# boundary is the file permissions on /hippocamp/.private).
+cd() {
+    local target="${1:-/hippocamp/data}"
+    local resolved
+    if ! resolved="$(builtin cd -- "$target" 2>/dev/null && pwd -P)"; then
+        builtin cd -- "$target"
+        return
+    fi
+    case "$resolved/" in
+        /hippocamp/data/*) builtin cd -- "$target" ;;
+        *) echo "cd: restricted to /hippocamp/data" >&2; return 1 ;;
+    esac
+}
+
+# Hide the gold directory from default listings.
+ls() { command ls --hide=gold "$@"; }
+
+if [[ $- == *i* ]]; then
+    PS1='hippocamp:\w\$ '
+fi

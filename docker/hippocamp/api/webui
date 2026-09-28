@@ -1,0 +1,29 @@
+#!/bin/bash
+# Start the WebUI (runs as hippocamp_api via sudo). Prints a JSON status.
+PORT="${HIPPOCAMP_PORT:-8080}"
+LOG_DIR=/hippocamp/output/.webui
+LOG="$LOG_DIR/webui.log"
+PID_FILE=/hippocamp/.private/state/webui.pid
+mkdir -p "$LOG_DIR"
+
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    printf '{\n  "success": true,\n  "data": "WebUI already running",\n  "pid": "%s",\n  "url": "http://localhost:%s",\n  "log": "%s",\n  "error": null\n}\n' \
+        "$(cat "$PID_FILE")" "$PORT" "$LOG"
+    exit 0
+fi
+
+nohup /usr/bin/python3 /hippocamp/webui/app.py >>"$LOG" 2>&1 &
+PID=$!
+echo "$PID" >"$PID_FILE"
+for _ in $(seq 1 50); do
+    if curl -fs "http://127.0.0.1:$PORT/api/feature_flags" >/dev/null 2>&1; then
+        printf '{\n  "success": true,\n  "data": "WebUI started",\n  "pid": "%s",\n  "url": "http://localhost:%s",\n  "log": "%s",\n  "error": null\n}\n' \
+            "$PID" "$PORT" "$LOG"
+        exit 0
+    fi
+    kill -0 "$PID" 2>/dev/null || break
+    sleep 0.2
+done
+rm -f "$PID_FILE"
+printf '{\n  "success": false,\n  "data": "WebUI failed to start",\n  "log": "%s",\n  "error": "start_failed"\n}\n' "$LOG"
+exit 1

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+CMD_NAME="list_files"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_dispatch.sh"
