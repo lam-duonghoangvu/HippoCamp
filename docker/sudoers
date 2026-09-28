@@ -1,0 +1,4 @@
+# hippocamp_user may run only the HippoCamp API commands as hippocamp_api,
+# the only account that can read /hippocamp/.private (gold, metadata, flags).
+Defaults:hippocamp_user !lecture, !pam_session, env_reset
+hippocamp_user ALL=(hippocamp_api) NOPASSWD: /hippocamp/api/return_txt, /hippocamp/api/return_img, /hippocamp/api/return_ori, /hippocamp/api/return_metadata, /hippocamp/api/list_files, /hippocamp/api/set_flags, /hippocamp/api/hhelp, /hippocamp/api/webui, /hippocamp/api/webui_stop, /hippocamp/api/webui_status

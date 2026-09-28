@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""
+Fake `docker` on PATH so the released agent/vllm.py and agent/vllm_batch.py
+run unmodified against local files instead of a real container.
+
+agent/vllm.py's run_docker_command() always shells out as:
+    docker exec [--user U] <container> /bin/bash -lc "<script>"
+where <script> is either a plain command (ls, cat, grep, ...) or, for the
+HippoCamp API commands, something like:
+    sudo -u hippocamp_api /hippocamp/api/return_txt "Some File.pdf"
+
+We rewrite that script (drop the sudo/user prefix, point /hippocamp/api/X at
+our local_bench/bin/X shim) and run it for real with cwd set to the local
+data root, so plain shell commands (ls, find, cat...) behave the same way
+they would inside the container's /hippocamp/data.
+
+`docker port <container> 8080/tcp` (WebUI port autodetect) always "fails"
+here (nonzero exit, no stdout) since there is no WebUI in local mode.
+Anything else is a no-op success so accidental calls don't hard-crash a run.
+"""
+import os
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DATA_ROOT = os.environ.get("HIPPOCAMP_LOCAL_DATA", "")
+
+
+def cmd_exec(args):
+    # args: [--user U] <container> /bin/bash -lc <script>
+    try:
+        bash_idx = args.index("/bin/bash")
+    except ValueError:
+        sys.stderr.write("local docker shim: expected /bin/bash in exec args\n")
+        return 1
+    if bash_idx + 2 >= len(args):
+        sys.stderr.write("local docker shim: malformed exec invocation\n")
+        return 1
+    script = args[bash_idx + 2]
+
+    rewritten = script.replace("/hippocamp/api/", HERE + "/")
+    rewritten = rewritten.replace("sudo -u hippocamp_api ", "")
+
+    env = dict(os.environ)
+    env["PATH"] = HERE + os.pathsep + env.get("PATH", "")
+
+    proc = subprocess.run(
+        ["/bin/bash", "-lc", rewritten],
+        cwd=DATA_ROOT or None,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    sys.stdout.write(proc.stdout or "")
+    sys.stderr.write(proc.stderr or "")
+    return proc.returncode
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        return 1
+    if args[0] == "exec":
+        return cmd_exec(args[1:])
+    if args[0] == "port":
+        # No WebUI locally; keep webui_base detection a silent no-op.
+        return 1
+    # Anything else (run, start, ps, ...): harmless no-op success.
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
