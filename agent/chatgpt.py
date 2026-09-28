@@ -182,7 +182,7 @@ def parse_tagged_response(text: str) -> dict:
 
 def fallback_parse(text: str) -> dict:
     # Try explicit "command:" patterns
-    cmd_match = re.search(r"command\\s*[:=]\\s*(.+)", text, re.IGNORECASE)
+    cmd_match = re.search(r"command\s*[:=]\s*(.+)", text, re.IGNORECASE)
     if cmd_match:
         cmd = cmd_match.group(1).strip()
         if cmd:
@@ -197,8 +197,8 @@ def fallback_parse(text: str) -> dict:
         line = raw.strip()
         if not line:
             continue
-        line = re.sub(r"^[\\d\\.\\)\\s\\-*]+", "", line).strip()
-        line = re.sub(r"^(command|cmd)\\s*[:=]\\s*", "", line, flags=re.IGNORECASE).strip()
+        line = re.sub(r"^[\d.\)\s\-*]+", "", line).strip()
+        line = re.sub(r"^(command|cmd)\s*[:=]\s*", "", line, flags=re.IGNORECASE).strip()
         if line.startswith("$"):
             line = line[1:].strip()
         for prefix in command_prefixes:
@@ -216,7 +216,7 @@ def parse_response(text: str, relaxed: bool = False) -> dict:
         obj = fallback_parse(text)
         if obj:
             return obj
-    raise
+        raise
 
 
 def normalize_command(command: str) -> str:
