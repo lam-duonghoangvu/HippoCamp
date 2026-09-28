@@ -34,8 +34,11 @@ Container names and host ports follow the released convention:
 | `hippocamp-adam-fullset` | 18085 |
 | `hippocamp-victoria-fullset` | 18086 |
 
-Options: `--replace`, `--no-network`, `--no-readonly`, `--port`, `--name`,
-`--dataset-root`, `--baked`.
+Ports are published on `127.0.0.1` only; pass `--host 0.0.0.0` to expose a
+container to the network (the API has no authentication).
+
+Options: `--replace`, `--no-network`, `--no-readonly`, `--port`, `--host`,
+`--name`, `--dataset-root`, `--baked`.
 
 Self-contained images (data copied in, for moving to another machine):
 
@@ -58,6 +61,7 @@ Baking copies the data into the image (Bei fullset is ~67 GB).
 | Data and system files immutable | data mounted `:ro`, root filesystem `--read-only`, writable tmpfs only for `/tmp`, `/run`, `/hippocamp/output` |
 | Resource and privilege limits | `--cap-drop ALL` (+ `SETUID`/`SETGID`/`AUDIT_WRITE` for sudo), `--pids-limit 512`, `--memory 8g` |
 | `cd` stays in `/hippocamp/data`, `ls` hides `gold` | shell functions in `hippocamp/api/bashrc_additions` (a convenience, as in the original; the permissions above are the boundary) |
+| WebUI/API reachable from this host only | port published on `127.0.0.1` (`--host` to override) |
 | Optional: no network | `--no-network` (also disables the WebUI port) |
 
 `--security-opt no-new-privileges` is not used: it would break `sudo`, which

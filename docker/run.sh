@@ -11,12 +11,14 @@
 #   --image IMAGE        runtime image (default: hippocamp/runtime:latest)
 #   --name NAME          container name (default: hippocamp-<profile>-<scope>)
 #   --port PORT          host port for the WebUI (default: documented port)
+#   --host ADDR          host address to publish on (default: 127.0.0.1; the
+#                        API has no auth, so 0.0.0.0 must be explicit)
 #   --no-network         run with --network none (disables the WebUI port)
 #   --no-readonly        do not mount the root filesystem read-only
 #   --replace            remove an existing container with the same name first
 set -euo pipefail
 
-usage() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 [ $# -ge 2 ] || usage
 
 PROFILE="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
@@ -25,7 +27,7 @@ shift 2
 
 DATASET_ROOT="${HIPPOCAMP_DATASET_ROOT:-/mnt/data/dhvlam/datasets/HippoCamp}"
 IMAGE="hippocamp/runtime:latest"
-BAKED=0 NETWORK=1 READONLY=1 REPLACE=0 NAME="" PORT=""
+BAKED=0 NETWORK=1 READONLY=1 REPLACE=0 NAME="" PORT="" HOST=127.0.0.1
 while [ $# -gt 0 ]; do
     case "$1" in
         --dataset-root) DATASET_ROOT="$2"; shift 2 ;;
@@ -33,6 +35,7 @@ while [ $# -gt 0 ]; do
         --image) IMAGE="$2"; shift 2 ;;
         --name) NAME="$2"; shift 2 ;;
         --port) PORT="$2"; shift 2 ;;
+        --host) HOST="$2"; shift 2 ;;
         --no-network) NETWORK=0; shift ;;
         --no-readonly) READONLY=0; shift ;;
         --replace) REPLACE=1; shift ;;
@@ -83,7 +86,7 @@ args=(
 )
 [ "$READONLY" = 1 ] && args+=(--read-only)
 if [ "$NETWORK" = 1 ]; then
-    args+=(-p "$PORT:8080")
+    args+=(-p "$HOST:$PORT:8080")
 else
     args+=(--network none)
 fi
@@ -102,6 +105,6 @@ fi
 args+=("$IMAGE")
 
 docker "${args[@]}" >/dev/null
-echo "started $NAME ($IMAGE) on port $PORT"
+echo "started $NAME ($IMAGE) on $HOST:$PORT"
 echo "  shell:  docker exec -it $NAME bash -l"
 echo "  agent:  --container $NAME"
